@@ -1,4 +1,3 @@
-
 <resources>
-    <style name="Theme.Material3.Dark" parent="Theme.Material3.Dark.NoActionBar"/>
+    <style name="Theme.OfflineDownloader" parent="android:Theme.Material.NoActionBar" />
 </resources>
