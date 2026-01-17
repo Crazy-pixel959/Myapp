@@ -1,12 +1,18 @@
 package com.example.offlinedownloader
 
 import android.os.Bundle
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BrowserUpdated
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,11 +22,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            var currentTab by remember { mutableIntStateOf(0) }
+            var urlInput by remember { mutableStateOf("") }
+
             MaterialTheme(
                 colorScheme = darkColorScheme(
                     primary = Color(0xFFD0BCFF),
@@ -28,11 +38,37 @@ class MainActivity : ComponentActivity() {
                     surface = Color(0xFF1C1B1F)
                 )
             ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    DownloadScreen()
+                Scaffold(
+                    bottomBar = {
+                        NavigationBar {
+                            NavigationBarItem(
+                                selected = currentTab == 0,
+                                onClick = { currentTab = 0 },
+                                icon = { Icon(Icons.Default.Home, null) },
+                                label = { Text("Home") }
+                            )
+                            NavigationBarItem(
+                                selected = currentTab == 1,
+                                onClick = { currentTab = 1 },
+                                icon = { Icon(Icons.Default.Language, null) },
+                                label = { Text("Browser") }
+                            )
+                        }
+                    }
+                ) { padding ->
+                    Box(modifier = Modifier.padding(padding)) {
+                        if (currentTab == 0) {
+                            DownloadScreen(
+                                url = urlInput,
+                                onUrlChange = { urlInput = it }
+                            )
+                        } else {
+                            BrowserScreen { capturedUrl ->
+                                urlInput = capturedUrl
+                                currentTab = 0
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -41,16 +77,13 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DownloadScreen() {
-    var url by remember { mutableStateOf("") }
-
+fun DownloadScreen(url: String, onUrlChange: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // --- Header Section ---
         Spacer(modifier = Modifier.height(40.dp))
         Text(
             text = "Video Downloader",
@@ -59,14 +92,13 @@ fun DownloadScreen() {
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = "Paste a link below to start",
+            text = "Paste a link or use the browser",
             fontSize = 14.sp,
             color = Color.Gray
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // --- Main Input Card ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -80,7 +112,7 @@ fun DownloadScreen() {
             ) {
                 OutlinedTextField(
                     value = url,
-                    onValueChange = { url = it },
+                    onValueChange = onUrlChange,
                     label = { Text("URL Link") },
                     placeholder = { Text("https://...") },
                     leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) },
@@ -92,14 +124,11 @@ fun DownloadScreen() {
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Button(
-                    onClick = { /* Your Python Download Logic Here */ },
+                    onClick = { /* Python Logic Will Go Here */ },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Icon(Icons.Default.Download, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -107,14 +136,38 @@ fun DownloadScreen() {
                 }
             }
         }
-        
-        Spacer(modifier = Modifier.weight(1f))
-        
-        // Simple helper text at bottom
-        Text(
-            text = "Powered by yt-dlp",
-            fontSize = 12.sp,
-            color = Color.Gray.copy(alpha = 0.5f)
+    }
+}
+
+@Composable
+fun BrowserScreen(onUrlCaptured: (String) -> Unit) {
+    var webView: WebView? by remember { mutableStateOf(null) }
+
+    BackHandler(enabled = webView?.canGoBack() == true) {
+        webView?.goBack()
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { context ->
+                WebView(context).apply {
+                    webViewClient = WebViewClient()
+                    settings.javaScriptEnabled = true
+                    loadUrl("https://www.google.com")
+                    webView = this
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        ExtendedFloatingActionButton(
+            onClick = { webView?.url?.let { onUrlCaptured(it) } },
+            icon = { Icon(Icons.Default.BrowserUpdated, null) },
+            text = { Text("Grab Video Link") },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            containerColor = MaterialTheme.colorScheme.primary
         )
     }
 }
