@@ -9,11 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BrowserUpdated
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,16 +24,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            var currentTab by remember { mutableIntStateOf(0) }
+            var currentTab by remember { mutableStateOf(0) }
             var urlInput by remember { mutableStateOf("") }
 
-            MaterialTheme(
-                colorScheme = darkColorScheme(
-                    primary = Color(0xFFD0BCFF),
-                    secondary = Color(0xFFCCC2DC),
-                    surface = Color(0xFF1C1B1F)
-                )
-            ) {
+            MaterialTheme(colorScheme = darkColorScheme()) {
                 Scaffold(
                     bottomBar = {
                         NavigationBar {
@@ -58,10 +48,7 @@ class MainActivity : ComponentActivity() {
                 ) { padding ->
                     Box(modifier = Modifier.padding(padding)) {
                         if (currentTab == 0) {
-                            DownloadScreen(
-                                url = urlInput,
-                                onUrlChange = { urlInput = it }
-                            )
+                            DownloadScreen(urlInput) { urlInput = it }
                         } else {
                             BrowserScreen { capturedUrl ->
                                 urlInput = capturedUrl
@@ -75,64 +62,28 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadScreen(url: String, onUrlChange: (String) -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
+        modifier = Modifier.fillMaxSize().padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(40.dp))
-        Text(
-            text = "Video Downloader",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = "Paste a link or use the browser",
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
-
+        Text("Downloader", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        
         Spacer(modifier = Modifier.height(32.dp))
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(24.dp)) {
                 OutlinedTextField(
                     value = url,
                     onValueChange = onUrlChange,
                     label = { Text("URL Link") },
-                    placeholder = { Text("https://...") },
-                    leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true
+                    modifier = Modifier.fillMaxWidth()
                 )
-
                 Spacer(modifier = Modifier.height(20.dp))
-
-                Button(
-                    onClick = { /* Python Logic Will Go Here */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(Icons.Default.Download, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Download Now", fontWeight = FontWeight.Bold)
+                Button(onClick = { }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Download Now")
                 }
             }
         }
@@ -142,10 +93,7 @@ fun DownloadScreen(url: String, onUrlChange: (String) -> Unit) {
 @Composable
 fun BrowserScreen(onUrlCaptured: (String) -> Unit) {
     var webView: WebView? by remember { mutableStateOf(null) }
-
-    BackHandler(enabled = webView?.canGoBack() == true) {
-        webView?.goBack()
-    }
+    BackHandler(enabled = webView?.canGoBack() == true) { webView?.goBack() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
@@ -160,14 +108,11 @@ fun BrowserScreen(onUrlCaptured: (String) -> Unit) {
             modifier = Modifier.fillMaxSize()
         )
 
-        ExtendedFloatingActionButton(
+        Button(
             onClick = { webView?.url?.let { onUrlCaptured(it) } },
-            icon = { Icon(Icons.Default.BrowserUpdated, null) },
-            text = { Text("Grab Video Link") },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            containerColor = MaterialTheme.colorScheme.primary
-        )
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+        ) {
+            Text("Grab Link")
+        }
     }
 }
